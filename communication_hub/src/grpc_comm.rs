@@ -1,41 +1,45 @@
 use tonic::{transport::Server, Request, Response, Status};
 
-
-use rpc::greeter_server::{Greeter, GreeterServer};
-use rpc::{HelloReply, HelloRequest};
-
+use rpc::package_status_server::{PackageStatus, PackageStatusServer};
+use rpc::{PackageAcceptanceReq, PackageAcceptanceResp};
 
 pub mod rpc {
-    tonic::include_proto!("helloworld");
+    tonic::include_proto!("robot_to_del");
 }
 
 #[derive(Debug, Default)]
-pub struct MyGreeter {}
+pub struct MyPackageStatusService;
 
 #[tonic::async_trait]
-impl Greeter for MyGreeter {
-    async fn say_hello(
+impl PackageStatus for MyPackageStatusService {
+    async fn robot_to_server(
         &self,
-        request: Request<HelloRequest>,
-    ) -> Result<Response<HelloReply>, Status> {
-        println!("Got a request: {:?}", request);
+        request: Request<PackageAcceptanceReq>,
+    ) -> Result<Response<PackageAcceptanceResp>, Status> {
+        let req = request.into_inner();
+        println!(
+            "Robot {} requests drop at hub {} slot {:?}",
+            req.robot_id,
+            req.del_hub_id,
+            // slot_id is a Vec<u8>, so we can convert to String or hex as needed:
+            std::str::from_utf8(&req.slot_id).ok()
+        );
 
-        let reply = HelloReply {
-            message: format!("Hello {}!", request.into_inner().name),
-        };
+        // TODO: your acceptance logic here
+        let accepted = true;
 
-        Ok(Response::new(reply))
+        Ok(Response::new(PackageAcceptanceResp { accepted }))
     }
 }
 
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn std::error::Error>> {
-    println!("Starting gRPC server...");
     let addr = "[::1]:50051".parse()?;
-    let greeter = MyGreeter::default();
-    println!("Greeter service listening on {}", addr);
+    let svc = MyPackageStatusService::default();
+
+    println!("PackageStatusServer listening on {}", addr);
     Server::builder()
-        .add_service(GreeterServer::new(greeter))
+        .add_service(PackageStatusServer::new(svc))
         .serve(addr)
         .await?;
 
