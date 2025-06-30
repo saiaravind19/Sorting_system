@@ -1,0 +1,161 @@
+#!/usr/bin/env python3
+import rclpy
+from rclpy.node import Node
+
+from std_msgs.msg import Header
+from geometry_msgs.msg import Pose, Quaternion
+from robot_msgs.msg import Telemetry, Path
+
+import math
+import tf_transformations
+
+
+"""
+ToDo:
+Add tf publisher so That we can visualize the robot pose in rviz
+Add a service to set the robot state
+
+"""
+
+class WaypointFollower(Node):
+    def __init__(self,node_name):
+
+        super().__init__(node_name)
+
+        # robot state
+        self.x = 0.0
+        self.y = 0.0
+        self.theta = 0.0
+
+        # controller gains / limits
+        self.max_linear_velocity = 1.0   # m/s
+        self.max_angular_velocity = 1.0  # rad/s
+        self.goal_tolerance = 0.1        # m
+        self.yaw_tolerance  = 0.05       # rad
+
+        # waypoint queue
+        self.waypoints: list[Pose] = []
+        self.current_goal: Pose | None = None
+        self.waypoint_status = False
+
+        # subs + pubs
+        self.create_subscription(Path, 'global_path', self.path_callback, 10)
+
+        # drive & publish at 20 Hz
+        self.dt = 0.05
+        self.create_timer(self.dt, self.control_loop)
+
+    def path_callback(self, msg: Path):
+        # load up new waypoint list
+        self.waypoints = list(msg.pose)
+        self.current_goal = None
+        self.waypoint_status = False
+        self.get_logger().info(f"Loaded {len(self.waypoints)} waypoints")
+
+    def control_loop(self):
+        # pick a new goal if needed
+        if self.current_goal is None and self.waypoints:
+            self.current_goal = self.waypoints.pop(0)
+            self.get_logger().info("New goal → "
+                f"x={self.current_goal.position.x:.2f}, "
+                f"y={self.current_goal.position.y:.2f}")
+            
+        elif len(self.waypoints) == 0 and self.current_goal is None:
+            self.waypoint_status = True
+            self.get_logger().info("No more waypoints to follow")
+            # set the telemetry regardung the path completetion
+
+            return
+
+        # compute control
+        lin_vel = 0.0
+        ang_vel = 0.0
+
+        if self.current_goal:
+            # distance to goal from current position
+            dist = math.dist((self.current_goal.position.x,self.current_goal.position.y), (self.x, self.y))
+            
+            # calculate teh slope of the goal
+            dx = self.current_goal.position.x - self.x
+            dy = self.current_goal.position.y - self.y
+            target_yaw = math.atan2(dy, dx) # range of atan2 is [-pi, pi]
+
+
+            unnormalised_yaw_error = target_yaw - self.theta
+            yaw_error =  (unnormalised_yaw_error + math.pi) % (2 * math.pi) - math.pi # normalised to -pi to pi
+
+            # have we reached position?
+            if dist > self.goal_tolerance:
+                # drive forward & turn
+                lin_vel = min(self.max_linear_velocity, dist) 
+                ang_vel = max(-self.max_angular_velocity,
+                              min(self.max_angular_velocity,
+                                  2.0 * yaw_error))
+            else:
+                if abs(yaw_error) > self.yaw_tolerance:
+                    ang_vel = max(-self.max_angular_velocity,
+                                  min(self.max_angular_velocity,
+                                      2.0 * yaw_error))
+                else:
+                    self.get_logger().info("Reached goal")
+                    self.current_goal = None
+
+        self.x += lin_vel * math.cos(self.theta) * self.dt
+        self.y += lin_vel * math.sin(self.theta) * self.dt
+        self.theta += ang_vel * self.dt
+
+
+    def get_robot_pose(self)-> Pose:
+        current_pose = Pose()
+        current_pose.position.x = self.x
+        current_pose.position.y = self.y
+        current_pose.position.z = 0.0
+        current_orientation = tf_transformations.quaternion_from_euler(0, 0, self.theta)
+        type(current_orientation)
+        current_pose.orientation.x = current_orientation[0]
+        current_pose.orientation.y = current_orientation[1]
+        current_pose.orientation.z = current_orientation[2]
+        current_pose.orientation.w = current_orientation[3]
+        return current_pose
+    
+    def get_waypoint_status(self) -> bool:
+        """
+        Returns True if the robot is currently following a waypoint, False otherwise.
+        """
+        return self.waypoint_status
+    
+class OdometryPublisher(WaypointFollower):
+    def __init__(self):
+        super().__init__('odometry_publisher')
+
+        self.telemetry_publisher_ = self.create_publisher(Telemetry, 'telemetry', 10)
+        self.robot_id = self.get_namespace().lstrip("/") or "robot_1"
+        self.timer_period = 0.2 
+        self.timer = self.create_timer(self.timer_period, self.publish_telemetry)
+
+
+
+    def publish_telemetry(self):
+        msg = Telemetry()
+        msg.header = Header()
+        msg.header.stamp = self.get_clock().now().to_msg()
+        msg.header.frame_id = 'odom'
+        msg.robot_id = self.robot_id
+        msg.pose = self.get_robot_pose()
+        msg.task_status = self.get_waypoint_status()
+
+        self.telemetry_publisher_.publish(msg)
+
+
+
+
+def main(args=None):
+    rclpy.init(args=args)
+    node = OdometryPublisher()
+    rclpy.spin(node)
+    node.destroy_node()
+    rclpy.shutdown()
+
+
+if __name__ == '__main__':
+    main()
