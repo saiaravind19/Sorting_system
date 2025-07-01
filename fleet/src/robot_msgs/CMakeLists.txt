@@ -22,8 +22,12 @@ find_package(geometry_msgs REQUIRED)
 rosidl_generate_interfaces(${PROJECT_NAME}
   "msg/Telemetry.msg"
   "msg/Path.msg"
+  "srv/PlanPath.srv"
+  "srv/SetState.srv"
+
   DEPENDENCIES geometry_msgs std_msgs
 )
+ament_export_dependencies(rosidl_default_runtime)
 
 if(BUILD_TESTING)
   find_package(ament_lint_auto REQUIRED)

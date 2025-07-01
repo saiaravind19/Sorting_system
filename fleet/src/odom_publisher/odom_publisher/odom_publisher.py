@@ -1,19 +1,23 @@
 #!/usr/bin/env python3
 import rclpy
 from rclpy.node import Node
+import math
+import tf_transformations
+
 
 from std_msgs.msg import Header
 from geometry_msgs.msg import Pose, Quaternion
 from robot_msgs.msg import Telemetry, Path
+from robot_msgs.srv import SetState
 
-import math
-import tf_transformations
 
 
 """
 ToDo:
 Add tf publisher so That we can visualize the robot pose in rviz
 Add a service to set the robot state
+this node will be launched using namespace so that each robot will have its own instance
+
 
 """
 
@@ -57,12 +61,12 @@ class WaypointFollower(Node):
         if self.current_goal is None and self.waypoints:
             self.current_goal = self.waypoints.pop(0)
             self.get_logger().info("New goal → "
-                f"x={self.current_goal.position.x:.2f}, "
-                f"y={self.current_goal.position.y:.2f}")
+                f"x={self.current_goal.position.x}, "
+                f"y={self.current_goal.position.y}")
             
         elif len(self.waypoints) == 0 and self.current_goal is None:
             self.waypoint_status = True
-            self.get_logger().info("No more waypoints to follow")
+            self.get_logger().info("No more waypoints to follow",throttle_duration_sec=5.0)
             # set the telemetry regardung the path completetion
 
             return
@@ -128,24 +132,28 @@ class OdometryPublisher(WaypointFollower):
     def __init__(self):
         super().__init__('odometry_publisher')
 
-        self.telemetry_publisher_ = self.create_publisher(Telemetry, 'telemetry', 10)
+        self.telemetry_publisher_ = self.create_publisher(Telemetry, '/telemetry', 10)
         self.robot_id = self.get_namespace().lstrip("/") or "robot_1"
         self.timer_period = 0.2 
+        self.robot_state = "idel"
         self.timer = self.create_timer(self.timer_period, self.publish_telemetry)
+        #######only for simualtion purposes########################
+        self.set_robot_state_service = self.create_service(SetState, 'set_robot_state', self.set_robot_state_callback)
 
-
-
+    def set_robot_state_callback(self, request, response):
+        self.robot_state = request.state
+        self.get_logger().info(f"Robot {self.robot_id} state set to: {self.robot_state}")
+        return response
+    
     def publish_telemetry(self):
         msg = Telemetry()
-        msg.header = Header()
         msg.header.stamp = self.get_clock().now().to_msg()
         msg.header.frame_id = 'odom'
         msg.robot_id = self.robot_id
         msg.pose = self.get_robot_pose()
         msg.task_status = self.get_waypoint_status()
-
+        msg.robot_state = self.robot_state
         self.telemetry_publisher_.publish(msg)
-
 
 
 

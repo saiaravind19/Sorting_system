@@ -49,7 +49,7 @@ def extract_colored_cells(filename, sheet_name=None):
                 hexcolor = rgb[-6:].lower()
                 for grid_name, target in grid_types.items():
                     if hexcolor == target:
-                        results[grid_name].append((cell.row, cell.column))
+                        results[grid_name].append((cell.column,cell.row))
     return results
 
 def load_csv(path):
@@ -63,5 +63,5 @@ if __name__ == '__main__':
     dump_grid_config = extract_colored_cells("/home/sai/projects/lexxpluss/map.xlsx")
     print(dump_grid_config)
     with open('dump_grid_config.json', 'w') as json_file:
-        json.dump(dump_grid_config, json_file)
+        json.dump(dump_grid_config, json_file,indent=2)
     

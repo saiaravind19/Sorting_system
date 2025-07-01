@@ -1,0 +1,5 @@
+geometry_msgs/Pose start_goal
+geometry_msgs/Pose end_goal 
+string robot_id
+---
+bool status
