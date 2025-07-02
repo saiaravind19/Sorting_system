@@ -27,14 +27,16 @@ class map_utils:
 
 
     def map_grid(self):
+
         # limitation currently only handling one queue and one feeding grid in the layout
         # Can use basic math +/- 1 from x, y check the nearest queting grid with dist of 1
-
+        # Can expand this to handle multiple queuing grids
+        
         grid_mapping = []
 
         # grab the three parallel lists
-        feeding_list = self.__gridtype_to_coord.get("feeding_grids", [])
-        dumping_list = self.__gridtype_to_coord.get("dumping_grids", [])
+        feeding_list = self.__gridtype_to_coord.get("feeding_grid", [])
+        dumping_list = self.__gridtype_to_coord.get("dumping_grid", [])
         queuing_list = self.__gridtype_to_coord.get("queuing_grid", [])
 
         for f_coords, d_coords, q_coords in zip(feeding_list, dumping_list, queuing_list):
@@ -66,7 +68,7 @@ class map_utils:
         return self.__gridtype_to_coord["queue_grids"]
 
 ################feeding grids #####################
-    def get_available_feeding_grids(self):
+    def get_available_feeding_grids(self) -> list | None:
         available_feeding_coords = []
         for map in self.grid_mapping:
             if map["feeding_grid"]["status"] is None:
@@ -75,12 +77,12 @@ class map_utils:
                 )
         return available_feeding_coords
     
-    def block_feeding_grid(self,grid : list,robot_id : str):
+    def block_feeding_grid(self,grid : list,robot_id : str) -> None:
         for map in self.grid_mapping:
             if map["feeding_grid"]["coordinates"] == grid:
                 map["feeding_grid"]["status"] =  robot_id
 
-    def unblock_feeding_grid(self,grid : list):
+    def unblock_feeding_grid(self,grid : list) -> None:
         for map in self.grid_mapping:
             if map["feeding_grid"]["coordinates"] == grid:
                 map["feeding_grid"]["status"] =  None
@@ -88,7 +90,7 @@ class map_utils:
 
 
 ##############dumping grid ######################
-    def get_available_dumpding_grids(self):
+    def get_available_dumpding_grids(self) -> None:
         available_dumping_coords = []
         for map in self.grid_mapping:
             if map["dumping_grid"]["status"] is None:
@@ -97,19 +99,25 @@ class map_utils:
                 )
         return available_dumping_coords
       
-    def block_dumping_grid(self,grid : list,robot_id : str):
+    def block_dumping_grid(self,grid : list,robot_id : str) -> None:
         for map in self.grid_mapping:
             if map["dumping_grid"]["coordinates"] == grid:
                 map["dumping_grid"]["status"] =  robot_id
 
-    def unblock_dumping_grid(self,grid : list):
+    def unblock_dumping_grid(self,grid : list) -> None:
         for map in self.grid_mapping:
             if map["dumping_grid"]["coordinates"] == grid:
                 map["dumping_grid"]["status"] =  None
 
+    def get_respective_dumping_grid(self,grid : list)-> list | None:
+        for mapping_grid in self.grid_mapping:
+            if grid == mapping_grid["feeding_grid"]["coordinates"]:
+                print(f'Respective dumping grid in the system {mapping_grid}')
+                return mapping_grid["dumping_grid"]["coordinates"]
+        return None
     
 ################# Queuing grid ##########################
-    def get_available_queuing_grids(self):
+    def get_available_queuing_grids(self) -> list:
         available_queuing_coords = []
         for map in self.grid_mapping:
             if map["queuing_grid"]["status"] is None:
@@ -118,20 +126,18 @@ class map_utils:
                 )
         return available_queuing_coords
       
-    def block_queuing_grid(self,grid : list,robot_id : str):
+    def block_queuing_grid(self,grid : list,robot_id : str) -> None:
         for entry in self.grid_mapping:
             if entry["queuing_grid"]["coordinates"] == grid:
                 entry["queuing_grid"]["status"] =  robot_id
 
-    def unblock_queuing_grid(self,grid : list):
+    def unblock_queuing_grid(self,grid : list) -> None:
         for entry in self.grid_mapping:
             if entry["queuing_grid"]["coordinates"] == grid:
                 entry["queuing_grid"]["status"] =  None
 
 
-####################input type is list (x,y)###################
-
-    def get_nearest_available_grid(self,grid,grid_type):
+    def get_nearest_available_grid(self,grid : list ,grid_type :str)-> list | None:
         """ 
         Prefered to give the current grid
         """
@@ -139,6 +145,7 @@ class map_utils:
             nearest_coord = None
             min_dist = float('inf')
             available_grids = self.callbback_mapper[grid_type]()
+            print(f'Avalilable {grid_type} in the system {available_grids}')
             for f_coord in available_grids:
                 dist = abs(f_coord[0] - grid[0]) + abs(f_coord[1] - grid[1])
                 if dist < min_dist:

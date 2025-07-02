@@ -6,8 +6,6 @@
   <description>TODO: Package description</description>
   <maintainer email="sai.aravind@newspace.co.in">sai</maintainer>
   <license>TODO: License declaration</license>
-
-  <build_depend>std_msgs</build_depend>      <!-- your msg package -->
   <build_depend>robot_msgs</build_depend>      <!-- your msg package -->
 
 

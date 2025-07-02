@@ -14,7 +14,6 @@ class PickupRobot(RosInterface): # rpc class inheritance to be added
     
     def __init__(self,node_name):
         super().__init__(node_name)
-        print("hello from pickup robot")
         self.map_utils = map_utils('/home/sai/projects/lexxpluss/dump_grid_config.json')
         self._last_stamp = {}
 
@@ -41,6 +40,7 @@ class PickupRobot(RosInterface): # rpc class inheritance to be added
                         # block queuing grid
                         # send the path to path planner over sevice call
                         self.set_robot_state(robot_id,"robot2queue")
+                        self.node.get_logger().info(f'Sending {robot_id} to Queuing grid {queueing_grid}')
                         self.map_utils.block_queuing_grid(queueing_grid,robot_id)
                         self.send_robot2goal(current_position,queueing_grid,robot_id)
 
@@ -56,11 +56,13 @@ class PickupRobot(RosInterface): # rpc class inheritance to be added
                     feeding_grid = self.map_utils.get_nearest_available_grid(current_position,"feeding_grid")
                     if feeding_grid is not None:
                         self.set_robot_state(robot_id,"robot2feeder")
+                        self.node.get_logger().info(f'Sending {robot_id} to Queuing grid {feeding_grid}')
+
                         self.map_utils.block_feeding_grid(feeding_grid,robot_id)
                         self.send_robot2goal(current_position,feeding_grid,robot_id)
                         self.map_utils.unblock_queuing_grid(current_position)
                     else :
-                        self.node.get_logger().warning("no available queue grid",throttle_duration_sec=5.0)
+                        self.node.get_logger().warning("no available feeding grid",throttle_duration_sec=5.0)
 
                 elif robot_telem.robot_state == "robot2feeder":
                     # check monitor the path completetion - > task status
@@ -72,15 +74,17 @@ class PickupRobot(RosInterface): # rpc class inheritance to be added
 
 ##################################check for status from delivery hub  ######################
 
-                    dumping_grid = self.map_utils.get_nearest_available_grid(current_position,"dumping_grid")
+                    dumping_grid = self.map_utils.get_respective_dumping_grid(current_position)
                     if dumping_grid is not None:
                         self.set_robot_state(robot_id,"robot2delhub")
-                        self.map_utils.block_dumping_grid(feeding_grid,robot_id)
+                        self.node.get_logger().info(f'Sending {robot_id} to dumping grid {dumping_grid}')
+
+                        self.map_utils.block_dumping_grid(dumping_grid,robot_id)
                         self.send_robot2goal(current_position,dumping_grid,robot_id)
                         self.map_utils.unblock_feeding_grid(current_position)
                         
                     else :
-                        self.node.get_logger().warning("no available queue grid",throttle_duration_sec=5.0)
+                        self.node.get_logger().warning("no available dumping grid",throttle_duration_sec=5.0)
 
 
                 elif robot_telem.robot_state == "robot2delhub":
@@ -91,6 +95,8 @@ class PickupRobot(RosInterface): # rpc class inheritance to be added
 ############################ wait for package to be accepted ######################
 
                     self.set_robot_state(robot_id,"idle")
+                    self.node.get_logger().info(f'Robot finished {robot_id} to complete cycle :-) setting state to idle')
+
                     self.map_utils.unblock_dumping_grid(current_position)
 
                 else : 

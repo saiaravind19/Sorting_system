@@ -15,9 +15,9 @@ from openpyxl.styles import PatternFill
 
 grid_types = {
 
-"feeding_grids" : "00ff00",
-"dumping_grids" : "ffff00",
-"queue_grids"   : "4a86e8",
+"feeding_grid"      : "00ff00",
+"dumping_grid"      : "ffff00",
+"queuing_grid"      :"4a86e8",
 
 }
 
@@ -49,7 +49,10 @@ def extract_colored_cells(filename, sheet_name=None):
                 hexcolor = rgb[-6:].lower()
                 for grid_name, target in grid_types.items():
                     if hexcolor == target:
-                        results[grid_name].append((cell.column,cell.row))
+                        results[grid_name].append((cell.row - 1,cell.column -1 ))
+    for grid_name, coords in results.items():
+        coords.sort(key=lambda t: (t[1], t[0]))
+        
     return results
 
 def load_csv(path):

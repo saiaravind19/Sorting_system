@@ -15,10 +15,6 @@ from robot_msgs.msg import Path,Telemetry
 from robot_msgs.srv import PlanPath
 from geometry_msgs.msg import Pose
 
-
-################### Refractor with updated varibale names ####################
-
-
 class AStarPlanner(Node):
     def __init__(self, grid_map):
         super().__init__('path_planner')
@@ -36,8 +32,6 @@ class AStarPlanner(Node):
         self.telemetry_subscriber_ = self.create_subscription(Telemetry, 'telemetry', self.telemetry_callback,1)
 
         self.create_dynamic_connections_timer_ = self.create_timer(1.0,self.dynamic_connections_callback)
-
-############### needs name space to be added as per the robot_id ###########################################################
 
     class Node:
         __slots__ = ('row', 'col', 'cost', 'parent')
@@ -79,8 +73,8 @@ class AStarPlanner(Node):
 
         for i in range(len(path)):
             pose = Pose()
-            pose.position.x = float(path[i][1])
-            pose.position.y = float(path[i][0])
+            pose.position.x = float(path[i][0])
+            pose.position.y = float(path[i][1])
             pose.position.z = 0.0
             global_path.waypoint.append(pose)
         
@@ -90,8 +84,6 @@ class AStarPlanner(Node):
             self.get_logger().warning(f'Robot {robot_id} global path publisher not initlised :-) try to call the servce again')
             self.get_logger().info(f'Current robot_id list {self.robot_global_goal_publisher_dict.keys()}')
 
-
-########################################
     def plan_path_service_callback(self, request, response):
         """
         Callback for plan_path sevice
@@ -99,23 +91,20 @@ class AStarPlanner(Node):
         Bool : True if path is found, False otherwise
 
         """
-        # Rotation for catesian plane to map frame ( currently oriented at 90 rotated over z-axis)
-        start_point = [int(request.start_goal.position.y),int(request.start_goal.position.x)]
-        goal_point =  [int(request.end_goal.position.y),int(request.end_goal.position.x)]
-        
+        start_point = [int(request.start_goal.position.x),int(request.start_goal.position.y)]
+        goal_point =  [int(request.end_goal.position.x),int(request.end_goal.position.y)]
         path = self.plan_path(start_point,goal_point)
-############# convert list of waypoints to custom message and publish it#############
-        self.publish_global_path(path,request.robot_id)
-
+        
         if path :
+            # convert the python list to robot_msg/Path and publish the waypoints
+            self.publish_global_path(path,request.robot_id)
             response.status = True
         else :
+            self.get_logger().warning(f'Path not found for {request.robot_id} start point: {request.start_goal} goal_point: {request.end_goal}')
             response.status = False
 
         return response
         
-
-#######################################
 
     def parse_cell(self, cell_str):
         """
@@ -137,12 +126,12 @@ class AStarPlanner(Node):
         Generate neighbor nodes based on one-way allowed directions.
         """
         neighbors = []
-        for dr, dc in self.parse_cell(self.grid_map[node.row][node.col]):
-            nr, nc = node.row + dr, node.col + dc
+        for drow, dcol in self.parse_cell(self.grid_map[node.row][node.col]):
+            nrow, ncol = node.row + drow, node.col + dcol
             # check bounds
-            if 0 <= nr < self.rows and 0 <= nc < self.cols:
-                cost = node.cost + math.hypot(dr, dc)
-                neighbors.append(self.Node(nr, nc, cost, node))
+            if 0 <= nrow < self.rows and 0 <= ncol < self.cols:
+                cost = node.cost + math.hypot(drow, dcol)
+                neighbors.append(self.Node(nrow, ncol, cost, node))
         return neighbors
 
     @staticmethod
@@ -174,14 +163,16 @@ class AStarPlanner(Node):
                 return self.reconstruct_path(current)
             closed.add(key)
 
-            for nbr in self.get_neighbors(current):
-                nkey = (nbr.row, nbr.col)
+            for neighbor in self.get_neighbors(current):
+                nkey = (neighbor.row, neighbor.col)
                 if nkey in closed:
                     continue
-                if nkey not in open_dict or nbr.cost < open_dict[nkey].cost:
-                    open_dict[nkey] = nbr
-                    f = nbr.cost + self.heuristic(nbr, goal)
-                    heapq.heappush(heap, (f, nbr))
+                if nkey not in open_dict or neighbor.cost < open_dict[nkey].cost:
+                    open_dict[nkey] = neighbor
+
+                    # f(n) = g(n)+h(n)
+                    f = neighbor.cost + self.heuristic(neighbor, goal)
+                    heapq.heappush(heap, (f, neighbor))
         return None
 
 

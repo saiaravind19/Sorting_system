@@ -1,0 +1,17 @@
+syntax = "proto3";
+
+package robot_to_commhub;
+
+// If you want true “presence” detection on slot_id, you can use proto3’s `optional` keyword:
+message PackageAcceptanceReq {
+  string robot_id     = 1;        
+  string del_hub_id   = 2;        
+}
+message PackageAcceptanceResp {
+  bool accepted     = 1;        
+}
+
+service PackageStatus {
+  
+  rpc robotToServer (PackageAcceptanceReq) returns (PackageAcceptanceResp);
+}

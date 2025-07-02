@@ -34,7 +34,7 @@ class RosInterface():
 
     def plan_path_service_response(self,future,robot_id):
         responce = future.result()
-        self.get_logger().info(f'Path plan for {robot_id} is f{responce.status}')
+        self.node.get_logger().info(f'Path plan for {robot_id} is {responce.status}')
 
     def set_robot_state(self,robot_id,state):
         robot_state_req = SetState.Request()
@@ -44,15 +44,15 @@ class RosInterface():
 
     def send_robot2goal(self,start : list ,goal : list,robot_id : str) -> None:
         robot_path_req = PlanPath.Request()
-        robot_path_req.start_goal.x = start[0]
-        robot_path_req.start_goal.y = start[1]
-        robot_path_req.end_goal.x = goal[0]
-        robot_path_req.end_goal.y = goal[1]
+        robot_path_req.start_goal.position.x = float(start[0])
+        robot_path_req.start_goal.position.y = float(start[1])
+        robot_path_req.end_goal.position.x = float(goal[0])
+        robot_path_req.end_goal.position.y = float(goal[1])
         robot_path_req.robot_id = robot_id
         # wait for service and then call
         # wait for service
         if not self.plan_path_service_client_.wait_for_service(timeout_sec=5.0):
-            self.get_logger().error('plan_path service not available')
+            self.node.get_logger().error('plan_path service not available')
             return
         
         future = self.plan_path_service_client_.call_async(robot_path_req)
@@ -96,7 +96,7 @@ class RosInterface():
         plan_path_request.start_goal = start_goal
         plan_path_request.end_goal = end_goal
         while not self.plan_path_service_client_.wait_for_service(timeout_sec=1.0):
-            self.get_logger().info('Service not available, waiting...')
+            self.node.get_logger().info('Service not available, waiting...')
 
         future = self.plan_path_service_client_.call_async(plan_path_request)
         rclpy.spin_until_future_complete(self, future)
@@ -104,9 +104,9 @@ class RosInterface():
             try:
                 response = future.result() # respince is bool
                 if response.status:
-                    self.get_logger().info(f"Sending robot_{robot_id} from : {start_goal} to {end_goal}")
+                    self.node.get_logger().info(f"Sending robot_{robot_id} from : {start_goal} to {end_goal}")
                 else:
-                    self.get_logger().error(f"Failed to plan path for robot_{robot_id} from : {start_goal} to {end_goal}")
+                    self.node.get_logger().error(f"Failed to plan path for robot_{robot_id} from : {start_goal} to {end_goal}")
             except Exception as e:
-                self.get_logger().error(f"Service call failed: {e}")
+                self.node.get_logger().error(f"Service call failed: {e}")
     

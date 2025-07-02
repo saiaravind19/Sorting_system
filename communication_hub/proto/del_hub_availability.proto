@@ -1,0 +1,17 @@
+syntax = "proto3";
+
+package robot_to_commhub;
+
+message DeliveryHubAvailablityReq{
+    string del_hub_id =1; // field numbers needed for each field
+}
+message DeliveryHubAvailablityResp{
+    bool status =1;
+}
+
+
+service DeliveryHubStatus {
+  
+  rpc robotToCommHub (DeliveryHubAvailablityReq) returns (DeliveryHubAvailablityResp);
+}
+
