@@ -4,16 +4,28 @@ from pymodbus.server import StartAsyncTcpServer
 from pymodbus.datastore import ModbusSlaveContext, ModbusServerContext, ModbusSequentialDataBlock
 from enum import Enum
 from global_param import deliveryHubParam
+import argparse
+import logging
 
+logging.basicConfig(level= logging.INFO,format="[%(levelname)s]:[%(name)s]:[%(funcName)s]:%(message)s")
+
+
+##############Add host ip and port to be taken from command line arguments##############
 
 
 """
 ToDo:
-    - Add hub ID so that we can spawn multiple instances of the code from bash file for simulation.
-    - Add logging along with unique name.
 
 Simulator:
     - Add a client code which monitors the robot request for parcel accpetance and updates the delivary hub -> simlating the parcel dumping.
+
+
+Its a simulator for multiple delivery hubs
+As we are running on same machine we can have multiple slave id bind to the same port.
+
+In real life scenario we can have multiple delivery hubs running on different machines the differnece is the they have different IPs but same port.
+
+
 """
 
 class modBusDatatype(Enum):
@@ -23,39 +35,51 @@ class modBusDatatype(Enum):
     INPUT_REGISTER = 4
 
 
-
 class DeliveryHub:
-    def __init__(self):
-        self.store = ModbusSlaveContext(
-            # Bins / slots
-            co=ModbusSequentialDataBlock(0, [0]*deliveryHubParam.NUM_BINS), 
-            #using holding register so that I can reset the values if needed ( mimic the sesison restart)
-            hr=ModbusSequentialDataBlock(0, [0]), # stores the number of packages sorted
-            zero_mode=True  # Start the Modbus registers from 0
+    def __init__(self,num_slaves=1):
 
-        )
-        self.context = ModbusServerContext(slaves=self.store, single=True)
+        self.logger = logging.getLogger(f"DeliveryHub")
 
+        # create multiple instances of ModbusSlaveContext for each delivery hub
+        self.store = {
+                id :ModbusSlaveContext(
+                    # Bins / slots
+                    co=ModbusSequentialDataBlock(0, [0]*deliveryHubParam.NUM_BINS), 
+                    #using holding register so that I can reset the values if needed ( mimic the sesison restart)
+                    hr=ModbusSequentialDataBlock(0, [0]), # stores the number of packages sorted
+                    zero_mode=True  # Start the Modbus registers from 0
+                    )
+                    for id in range(0,num_slaves)
+        }
+        self.context = ModbusServerContext(slaves=self.store, single=False)
+        self.logger.info(f'Intialized {num_slaves} delivery hubs with slave IDs: {list(self.store.keys())}')
+        print(self.store)
 
-    async def free_slot(self,slot_id):
+    async def free_slot(self,hub_id,slot_id):
         await asyncio.sleep(random.uniform(1, 5))
-        self.store.setValues(1, slot_id, [0])
-        print(f"[Hub] Package accepted Slot {slot_id + 1} clearing the slot.")
-        count = self.store.getValues(3, 0)[0]
-        print("Current package_count:",count)
+        self.store[hub_id].setValues(1, slot_id, [0])
+        self.logger.info(f"Package accepted hub_id : {hub_id} Slot: {slot_id + 1} clearing the slot.")
+        count = self.store[hub_id].getValues(3, 0)[0]
+        self.logger.info(f"Current package_count: {count}")
 
     async def monitor_triggers(self):
-        prev = [0]*deliveryHubParam.NUM_BINS
+        prev = {
+            hub_id:[0]*deliveryHubParam.NUM_BINS
+            for hub_id in self.store.keys()
+            }
         while True:
-            current = self.context[0].getValues(modBusDatatype.COIL.value,0,deliveryHubParam.NUM_BINS)
-            for i in range(len(current)):
-                if current[i] == 1 and prev[i] == 0:
-                    count = self.store.getValues(3, deliveryHubParam.PACKAGE_COUNT_REG)[0]
-                    self.store.setValues(3, deliveryHubParam.PACKAGE_COUNT_REG, [count + 1])
-                    print(f"[Hub] Request for package acceptance for slot {i + 1} received.")
-                    asyncio.create_task(self.free_slot(i))
-            prev = current
-            await asyncio.sleep(0.1)
+            # get the state of the coil per hub
+            for hub_id,slave_context in self.store.items():
+
+                current = slave_context.getValues(modBusDatatype.COIL.value,0,deliveryHubParam.NUM_BINS)
+                for slot_id in range(len(current)):
+                    if current[slot_id] == 1 and prev[hub_id][slot_id] == 0:
+                        count = self.store[hub_id].getValues(3, deliveryHubParam.PACKAGE_COUNT_REG)[0]
+                        self.store[hub_id].setValues(3, deliveryHubParam.PACKAGE_COUNT_REG, [count + 1])
+                        self.logger.info(f"Request for package acceptance for hub : {hub_id} slot {slot_id + 1} received.")
+                        asyncio.create_task(self.free_slot(hub_id,slot_id))
+                prev[hub_id] = current
+                await asyncio.sleep(0.1)
 
 
     async def start(self):
@@ -72,5 +96,12 @@ class DeliveryHub:
 
 
 if __name__ == "__main__":
-    hub = DeliveryHub()
+    parser = argparse.ArgumentParser(description ='Delivery Hub Server(Modbus Slaves) uses MODbus TCP.')
+    parser.add_argument('--no_of_slaves', type = int, default = 1,
+                        help ='Enter the number of ddelivery hubs to be simulated. Default is 1.')
+    args = parser.parse_args()
+
+    deliveryHubParam.SLAVE_COUNT = args.no_of_slaves
+    
+    hub = DeliveryHub(args.no_of_slaves)
     asyncio.run(hub.start())

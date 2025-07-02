@@ -11,9 +11,9 @@ class RosInterface():
     # define all ros related callback functions
     # Make them as abstract methods
 
-    def __init__(self,node_name):
-        print(node_name)
-
+    def __init__(self, node_name, **kwargs):
+        print(f"Initializing ROS interface with node: {node_name}")
+        super().__init__(**kwargs)  # Call next class in MRO
         self.node =  rclpy.create_node(node_name)
         self.robot_data_dict = {}
         self.robot_id = []
@@ -23,6 +23,7 @@ class RosInterface():
         self.plan_path_service_client_ = self.node.create_client(PlanPath,'plan_path')
         self.create_dynamic_connections_timer_ = self.node.create_timer(1.0,self.dynamic_services_callback)
         self.control_time = 0.1
+        self.node.get_logger().info(f'ROS interface initialized Successfully')
 
     def start_state_machine_control_loop(self):
         self.state_machine_timer = self.node.create_timer(self.control_time,self.tick_state)

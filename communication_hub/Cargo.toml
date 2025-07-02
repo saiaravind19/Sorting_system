@@ -14,13 +14,5 @@ prost   = "0.11"
 tonic-build = { version = "0.9", build-dependencies = true }
 
 [[bin]]
-name = "main"                   # the binary’s name
-path = "src/main.rs"           # where to find its entry point
-
-[[bin]]
-name = "grpc_server"             # second binary’s name
-path = "src/grpc_comm.rs"
-
-[[bin]]
-name = "grpc_client"             # second binary’s name
-path = "src/client.rs"
+name = "main"                  
+path = "src/main.rs"          

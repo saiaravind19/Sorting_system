@@ -5,7 +5,12 @@ package_name = 'task_manager'
 setup(
     name=package_name,
     version='0.0.0',
-    packages=[package_name,'task_manager/utils' ,'task_manager/interface', 'task_manager/state_machine'],
+    packages=[package_name,
+              'task_manager/utils' ,
+              'task_manager/interface', 
+              'task_manager/interface/proto_gen',
+              'task_manager/state_machine' 
+              ],
     data_files=[
         ('share/ament_index/resource_index/packages',
             ['resource/' + package_name]),

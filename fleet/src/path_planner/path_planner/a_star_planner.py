@@ -79,6 +79,7 @@ class AStarPlanner(Node):
             global_path.waypoint.append(pose)
         
         if robot_id in self.robot_global_goal_publisher_dict.keys():
+            self.get_logger().info(f'Publishing global path for {robot_id} with {len(global_path.waypoint)} waypoints')
             self.robot_global_goal_publisher_dict[robot_id].publish(global_path)
         else :
             self.get_logger().warning(f'Robot {robot_id} global path publisher not initlised :-) try to call the servce again')
@@ -93,6 +94,7 @@ class AStarPlanner(Node):
         """
         start_point = [int(request.start_goal.position.x),int(request.start_goal.position.y)]
         goal_point =  [int(request.end_goal.position.x),int(request.end_goal.position.y)]
+        self.get_logger().info(f'Planning path for {request.robot_id} from {start_point} to {goal_point}')
         path = self.plan_path(start_point,goal_point)
         
         if path :
