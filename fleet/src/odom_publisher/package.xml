@@ -4,7 +4,7 @@
   <name>odom_publisher</name>
   <version>0.0.0</version>
   <description>TODO: Package description</description>
-  <maintainer email="sai.aravind@newspace.co.in">sai</maintainer>
+  <maintainer email="bplacearavind@gmail.com">sai</maintainer>
   <license>TODO: License declaration</license>
   <build_depend>robot_msgs</build_depend>      <!-- your msg package -->
 

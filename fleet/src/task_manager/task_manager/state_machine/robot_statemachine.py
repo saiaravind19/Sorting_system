@@ -15,10 +15,10 @@ class PickupRobot(RosInterface,RPCInterface): # rpc class inheritance to be adde
     def __init__(self, node_name, **kwargs):
         # Use super() for cooperative inheritance
         super().__init__(node_name=node_name, **kwargs)
-        self.map_utils = map_utils('/home/sai/projects/lexxpluss/dump_grid_config.json')
+        self.map_utils = map_utils('/home/sai/projects/lexxpluss/grid_config.json')
         self._last_stamp = {}
         self._last_package_request = {}  # Track last package acceptance request time
-        self.wait_time = Duration(seconds=2.0)  # 2 second wait
+        self.wait_time = Duration(seconds=0.5)  # 0.5 second wait
 
 
     def tick_state(self):
@@ -60,7 +60,7 @@ class PickupRobot(RosInterface,RPCInterface): # rpc class inheritance to be adde
                     feeding_grid = self.map_utils.get_nearest_available_grid(current_position,"feeding_grid")
                     if feeding_grid is not None:
                         self.set_robot_state(robot_id,"robot2feeder")
-                        self.node.get_logger().info(f'Sending {robot_id} to Queuing grid {feeding_grid}')
+                        self.node.get_logger().info(f'Sending {robot_id} to Feeding grid {feeding_grid}')
 
                         self.map_utils.block_feeding_grid(feeding_grid,robot_id)
                         self.send_robot2goal(current_position,feeding_grid,robot_id)
@@ -78,19 +78,23 @@ class PickupRobot(RosInterface,RPCInterface): # rpc class inheritance to be adde
 
 ##################################check for status from delivery hub  ######################
                     dumping_grid,hub_id = self.map_utils.get_respective_dumping_grid(current_position)
-                    del_hub_availability = self.del_hub_availablity_rpc(hub_id)
-                    self.node.get_logger().info(f'Checking for delihub availablity {del_hub_availability}')
-                    
-                    if dumping_grid is not None and del_hub_availability:
-                        self.set_robot_state(robot_id,"robot2delhub")
-                        self.node.get_logger().info(f'Sending {robot_id} to dumping grid {dumping_grid}')
 
-                        self.map_utils.block_dumping_grid(dumping_grid,robot_id)
-                        self.send_robot2goal(current_position,dumping_grid,robot_id)
-                        self.map_utils.unblock_feeding_grid(current_position)
-                        
-                    else :
-                        self.node.get_logger().warning("no available dumping grid",throttle_duration_sec=5.0)
+######################################check for ststus of dumping grid ######################  -> robot will stop at feeding grid
+                    dumping_grid_status = self.map_utils.check_dumping_grid_status(dumping_grid)
+                    if dumping_grid_status:
+                        del_hub_availability = self.del_hub_availablity_rpc(hub_id)
+                        self.node.get_logger().info(f'Checking for delihub availablity {del_hub_availability}')
+
+                        if dumping_grid is not None and del_hub_availability:
+                            self.set_robot_state(robot_id,"robot2delhub")
+                            self.node.get_logger().info(f'Sending {robot_id} to dumping grid {dumping_grid}')
+
+                            self.map_utils.block_dumping_grid(dumping_grid,robot_id)
+                            self.send_robot2goal(current_position,dumping_grid,robot_id)
+                            self.map_utils.unblock_feeding_grid(current_position)
+
+                        else :
+                            self.node.get_logger().warning("no available dumping grid",throttle_duration_sec=5.0)
 
 
                 elif robot_telem.robot_state == "robot2delhub":
@@ -102,13 +106,18 @@ class PickupRobot(RosInterface,RPCInterface): # rpc class inheritance to be adde
                     hub_id = self.map_utils.get_current_hub_id(current_position)
                     current_time = self.node.get_clock().now()
                     
+
                     # Wait 2 seconds between package acceptance requests
                     if robot_id in self._last_package_request:
                         time_since_last_request = current_time - self._last_package_request[robot_id]
                         if time_since_last_request < self.wait_time:
                             return  # Skip this iteration, wait for next callback
-                    
-                    # Make the package acceptance request
+                    else :
+                        self.publish_package_drop(hub_id) # Publish package drop message (only once) to simulate the package drop -> set the coil of del hub
+
+                    # Check for package acceptance
+
+
                     self._last_package_request[robot_id] = current_time
                     package_accepted = self.pack_accpet_rpc(robot_id, hub_id)
                     
@@ -123,7 +132,6 @@ class PickupRobot(RosInterface,RPCInterface): # rpc class inheritance to be adde
                     else:
                         self.node.get_logger().warning(f'Waiting for package acceptance for {robot_id} at hub {hub_id}',throttle_duration_sec=5.0)
 
-#####################publish to trigger the package drop to del hub#############################
                 else : 
                     self.node.get_logger().warning(f'unknown state detected for {robot_id} state : {robot_telem.robot_state}',throttle_duration_sec=5.0)
 

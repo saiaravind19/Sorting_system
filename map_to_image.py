@@ -22,7 +22,9 @@ grid_types = {
 }
 
 def map2_image(grid_map):
-    graw_scale_imag = np.zeros((len(grid_map),len(grid_map[0]),1), dtype=np.uint8)
+    height = len(grid_map)
+    width = len(grid_map[0])
+    graw_scale_imag = np.zeros((height,width,1), dtype=np.uint8)
     
     for row in range(len(grid_map)):
         for coloumn in range(len(grid_map[0])):
@@ -30,7 +32,15 @@ def map2_image(grid_map):
                 graw_scale_imag[row][coloumn] = 255
             else :
                 graw_scale_imag[row][coloumn] = 0
-    cv2.imwrite('output.png',graw_scale_imag)
+
+    # scale so both dimensions fit
+    scale = min(512 / float(width), 512 / float(height))
+    new_w = int(width * scale)
+    new_h = int(height * scale)
+
+    resized_img = cv2.resize(graw_scale_imag, (new_w, new_h), interpolation=cv2.INTER_NEAREST)
+    
+    cv2.imwrite('output.png',resized_img)
 
 def extract_colored_cells(filename, sheet_name=None):
     """

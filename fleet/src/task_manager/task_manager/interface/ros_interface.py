@@ -3,6 +3,7 @@ from rclpy.node import Node
 from robot_msgs.msg import Telemetry
 from robot_msgs.srv import PlanPath,SetState
 from geometry_msgs.msg import Pose
+from std_msgs.msg import String
 import copy
 from abc import abstractmethod
 
@@ -21,6 +22,7 @@ class RosInterface():
         self.set_robot_state_client_dict = {}
         self.telemetry_subscriber_ = self.node.create_subscription(Telemetry, 'telemetry', self.telemetry_callback,1)
         self.plan_path_service_client_ = self.node.create_client(PlanPath,'plan_path')
+        self.package_drop_publisher_ = self.node.create_publisher(String,'package_drop',1)
         self.create_dynamic_connections_timer_ = self.node.create_timer(1.0,self.dynamic_services_callback)
         self.control_time = 0.1
         self.node.get_logger().info(f'ROS interface initialized Successfully')
@@ -32,6 +34,13 @@ class RosInterface():
     @abstractmethod
     def tick_state(self):
         pass
+    
+    def publish_package_drop(self,hub_id : str):
+        # publish the package drop message to simulate the package drop and write to del hub slot
+        
+        msg = String()
+        msg.data = hub_id
+        self.package_drop_publisher_.publish(msg)
 
     def plan_path_service_response(self,future,robot_id):
         responce = future.result()

@@ -3,7 +3,6 @@ import random
 from pymodbus.server import StartAsyncTcpServer
 from pymodbus.datastore import ModbusSlaveContext, ModbusServerContext, ModbusSequentialDataBlock
 from enum import Enum
-from global_param import deliveryHubParam
 import argparse
 import logging
 
@@ -27,6 +26,12 @@ In real life scenario we can have multiple delivery hubs running on different ma
 
 
 """
+
+class deliveryHubParam():
+    NUM_BINS = 6
+    PACKAGE_COUNT_REG = 0 
+    SLAVE_COUNT = 1  
+    TIME_PERIOD = 5
 
 class modBusDatatype(Enum):
     COIL = 1
@@ -53,13 +58,13 @@ class DeliveryHub:
         }
         self.context = ModbusServerContext(slaves=self.store, single=False)
         self.logger.info(f'Intialized {num_slaves} delivery hubs with slave IDs: {list(self.store.keys())}')
-        print(self.store)
 
     async def free_slot(self,hub_id,slot_id):
-        await asyncio.sleep(random.uniform(1, 5))
+        await asyncio.sleep(random.uniform(2, deliveryHubParam.TIME_PERIOD))
         self.store[hub_id].setValues(1, slot_id, [0])
         self.logger.info(f"Package accepted hub_id : {hub_id} Slot: {slot_id + 1} clearing the slot.")
-        count = self.store[hub_id].getValues(3, 0)[0]
+        count_reg = self.store[hub_id].getValues(3, 0)
+        count = count_reg[0]
         self.logger.info(f"Current package_count: {count}")
 
     async def monitor_triggers(self):
@@ -97,11 +102,15 @@ class DeliveryHub:
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description ='Delivery Hub Server(Modbus Slaves) uses MODbus TCP.')
-    parser.add_argument('--no_of_slaves', type = int, default = 1,
+
+    parser.add_argument('--no_of_slaves', type = int, default = 4,
                         help ='Enter the number of ddelivery hubs to be simulated. Default is 1.')
+    parser.add_argument('--time_period', type = int, default = 5, help ='TIme in seconds before the bin is cleared (random b/w 1 and time_period).')
     args = parser.parse_args()
 
     deliveryHubParam.SLAVE_COUNT = args.no_of_slaves
-    
+    deliveryHubParam.TIME_PERIOD = args.time_period
+
+
     hub = DeliveryHub(args.no_of_slaves)
     asyncio.run(hub.start())

@@ -108,12 +108,26 @@ class map_utils:
             if map["dumping_grid"]["coordinates"] == grid:
                 map["dumping_grid"]["status"] =  None
 
+    def get_current_hub_id(self,grid : list) -> str:
+        for mapping_grid in self.grid_mapping:
+            if grid == mapping_grid["dumping_grid"]["coordinates"]:
+                return mapping_grid["dumping_grid"]["hub_id"] 
+        return None
+    
     def get_respective_dumping_grid(self,grid : list):
         for mapping_grid in self.grid_mapping:
             if grid == mapping_grid["feeding_grid"]["coordinates"]:
-                print(f'Respective dumping grid in the system {mapping_grid}')
                 return mapping_grid["dumping_grid"]["coordinates"],mapping_grid["dumping_grid"]["hub_id"] 
         return None, None
+    
+    def check_dumping_grid_status(self,grid : list) -> bool:
+        """
+        Check if the dumping grid is available or not
+        """
+        for mapping_grid in self.grid_mapping:
+            if grid == mapping_grid["dumping_grid"]["coordinates"]:
+                return mapping_grid["dumping_grid"]["status"] is None
+        return False
     
 ################# Queuing grid ##########################
     def get_available_queuing_grids(self) -> list:
@@ -144,8 +158,7 @@ class map_utils:
             nearest_coord = None
             min_dist = float('inf')
             available_grids = self.callbback_mapper[grid_type]()
-            print(f'Avalilable {grid_type} in the system {available_grids}')
-            for f_coord in available_grids:
+            for f_coord in available_grids :
                 dist = abs(f_coord[0] - grid[0]) + abs(f_coord[1] - grid[1])
                 if dist < min_dist:
                     min_dist = dist

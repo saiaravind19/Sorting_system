@@ -1,6 +1,6 @@
 from setuptools import setup
 
-package_name = 'path_planner'
+package_name = 'fleet_launcher'
 
 setup(
     name=package_name,
@@ -20,7 +20,9 @@ setup(
     tests_require=['pytest'],
     entry_points={
         'console_scripts': [
-            'a_star_planner = path_planner.a_star_planner:main'
+            'del_hub_pkg_simulator = fleet_launcher.del_hub_pkg_simulator:main',
+            'robot_visualizer = fleet_launcher.robot_visualizer:main'
+
         ],
     },
 )
