@@ -185,7 +185,7 @@ def load_csv(path):
 def main(args=None):
     rclpy.init(args=args)
 
-    grid_raw = load_csv("/home/sai/projects/lexxpluss/map.csv")
+    grid_raw = load_csv("/home/sai/projects/lexxpluss/extras/map.csv")
     # convert grid_raw into grid_map[y][x]dr
     planner = AStarPlanner(grid_raw)
     

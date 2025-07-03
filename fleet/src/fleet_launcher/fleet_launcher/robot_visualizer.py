@@ -25,7 +25,7 @@ class PoseVisualizer(Node):
             10
         )
 
-        self.backgrodund_img = plt.imread('/home/sai/projects/lexxpluss/layout.png')
+        self.backgrodund_img = plt.imread('/home/sai/projects/lexxpluss/extras/layout.png')
         # set up Matplotlib
         plt.ion()
         

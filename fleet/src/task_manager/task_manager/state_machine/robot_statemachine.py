@@ -15,7 +15,7 @@ class PickupRobot(RosInterface,RPCInterface): # rpc class inheritance to be adde
     def __init__(self, node_name, **kwargs):
         # Use super() for cooperative inheritance
         super().__init__(node_name=node_name, **kwargs)
-        self.map_utils = map_utils('/home/sai/projects/lexxpluss/grid_config.json')
+        self.map_utils = map_utils('/home/sai/projects/lexxpluss/extras/grid_config.json')
         self._last_stamp = {}
         self._last_package_request = {}  # Track last package acceptance request time
         self.wait_time = Duration(seconds=0.5)  # 0.5 second wait

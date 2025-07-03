@@ -15,11 +15,6 @@ class TaskManager(PickupRobot):
         super().__init__('task_manager')
         self.start_state_machine_control_loop()
 
-
-#########add service to start and stop the system#############
-###stop the control loop 
-
-
 def main(args=None):
     rclpy.init(args=args)
 
