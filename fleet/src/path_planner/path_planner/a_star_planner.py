@@ -153,7 +153,6 @@ class AStarPlanner(Node):
         goal = self.Node(goal_point[0], goal_point[1], 0.0, None)
         open_dict = {(start.row, start.col): start}
         closed = set()
-        # heap holds tuples (f, Node); Node.__lt__ handles ties
         heap = [(self.heuristic(start, goal), start)]
 
         while heap:
