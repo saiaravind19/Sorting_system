@@ -94,6 +94,60 @@
    cd delivery_hub
    python del_hub_visualiser.py
    ```
+4. **Launch Fleet**
+   > **Note**: TODO: Need to automate the launch process.
+   
+   #### Launch Multiple Robots
+   
+   **Terminal 1** - Launch robot_1:
+   ```bash
+   source ~/fleet/install/setup.bash 
+   ros2 run odom_publisher odom_publisher --ros-args -r __ns:=/robot_1
+   ```
+   
+   **Terminal 2** - Launch robot_2:
+   ```bash
+   source ~/fleet/install/setup.bash 
+   ros2 run odom_publisher odom_publisher --ros-args -r __ns:=/robot_2
+   ```
+   
+   **Terminal 3** - Launch robot_3:
+   ```bash
+   source ~/fleet/install/setup.bash 
+   ros2 run odom_publisher odom_publisher --ros-args -r __ns:=/robot_3
+   ```
+   
+   **Terminal 4** - Launch robot_4:
+   ```bash
+   source ~/fleet/install/setup.bash 
+   ros2 run odom_publisher odom_publisher --ros-args -r __ns:=/robot_4
+   ```
+
+   #### Launch Core Services
+   
+   **Launch Path Planner**:
+   ```bash
+   source ~/fleet/install/setup.bash 
+   ros2 run path_planner a_star_planner
+   ```
+
+   **Launch Delivery Hub Package Simulator**:
+   ```bash
+   source ~/fleet/install/setup.bash 
+   ros2 run fleet_launcher del_hub_pkg_simulator
+   ```
+   
+   **Launch Robot Visualizer**:
+   ```bash
+   source ~/fleet/install/setup.bash 
+   ros2 run fleet_launcher robot_visualizer
+   ```
+   
+   **Launch Task Manager**:
+   ```bash
+   source ~/fleet/install/setup.bash 
+   ros2 run task_manager task_manager
+   ```
 
 ## Other documentation
  [Documentation](https://www.notion.so/220ae74bd23880d28e24f494836fe45b?v=225ae74bd2388016b8c9000c03b32c10)
