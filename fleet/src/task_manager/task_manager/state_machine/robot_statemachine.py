@@ -10,10 +10,9 @@ Cases like decommission the robot is not handled so robot will block the grid if
 
 """
 
-class PickupRobot(RosInterface,RPCInterface): # rpc class inheritance to be added
+class PickupRobot(RosInterface,RPCInterface):
     
     def __init__(self, node_name, **kwargs):
-        # Use super() for cooperative inheritance
         super().__init__(node_name=node_name, **kwargs)
         self.map_utils = map_utils('/home/sai/projects/lexxpluss/extras/grid_config.json')
         self._last_stamp = {}
@@ -76,10 +75,7 @@ class PickupRobot(RosInterface,RPCInterface): # rpc class inheritance to be adde
                     # accepted set the state to robto2delhub
                     # else pas
 
-##################################check for status from delivery hub  ######################
                     dumping_grid,hub_id = self.map_utils.get_respective_dumping_grid(current_position)
-
-######################################check for ststus of dumping grid ######################  -> robot will stop at feeding grid
                     dumping_grid_status = self.map_utils.check_dumping_grid_status(dumping_grid)
                     if dumping_grid_status:
                         del_hub_availability = self.del_hub_availablity_rpc(hub_id)
