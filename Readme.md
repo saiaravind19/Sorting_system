@@ -25,7 +25,7 @@
 ### Communication Hub (Rust)
 - **Purpose**: Central communication service for robot-delivery hub coordination
 - **Features**:
-  - Robot availability checking
+  - Hub availability checking
   - Package acceptance verification
 
 ### Delivery Hub (Python)
