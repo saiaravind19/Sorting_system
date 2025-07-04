@@ -41,12 +41,12 @@ class ModbusMonitorUI(QMainWindow):
         layout = QVBoxLayout()
 
         # Set up coloumn headers of the UI
-        headers = [f"Bin {i+1}" for i in range(self.num_bins)] + ["Pkg Count"]
+        headers = [f"Slot {i+1}" for i in range(self.num_bins)] + ["Pkg Count"]
         self.table = QTableWidget(self.num_slaves, len(headers))
         self.table.setHorizontalHeaderLabels(headers)
 
         # Label rows headers of the UI 
-        self.table.setVerticalHeaderLabels([f"Slave {i}" for i in range(self.num_slaves)])
+        self.table.setVerticalHeaderLabels([f"Hub {i}" for i in range(self.num_slaves)])
         self.table.setEditTriggers(QTableWidget.NoEditTriggers)
         layout.addWidget(self.table)
 
