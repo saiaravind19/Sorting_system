@@ -59,7 +59,7 @@
 2. **Build Communication Hub**
    ```bash
    cd communication_hub
-   cargo build --release
+   cargo build 
    ```
 
 3. **Install Python dependencies**
