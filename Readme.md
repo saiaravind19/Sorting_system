@@ -5,6 +5,17 @@
 - **Delivery Hub**: Modbus server simulation for package handling and bin management
 - **Fleet Management**: ROS 2-based robot fleet coordination and task management
 
+
+<p align="center">
+  <a href="https://youtu.be/eQAzZhX_X8I?si=u7Dc6Y8gYQuqr_9g">
+    <img src="https://img.youtube.com/vi/eQAzZhX_X8I/0.jpg" alt="Project Demo" width="1050"/>
+
+  </a>
+</p>
+
+
+
+
 ## Directory Structure
 
 ```
