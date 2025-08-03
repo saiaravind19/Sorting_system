@@ -1,5 +1,5 @@
 
-## 🚀 Overview
+## 🚀 Overview     [![Ask DeepWiki](https://deepwiki.com/badge.svg)](https://deepwiki.com/saiaravind19/Sorting_system/1-overview)
 
 - **Communication Hub**: gRPC-based service for robot-to-hub communication using Modbus protocol
 - **Delivery Hub**: Modbus server simulation for package handling and bin management
